@@ -38,7 +38,7 @@ var callbacks = {};
 function response (connString){
 	var options = createOptions.apply(null, _.toArray(arguments).slice(1)),
 		methodName = options.methodName,
-		queueName = (options.appName + '_wabbitzzz_rpc').replace(/-/g, '_'), // trailing _rpc important for policy regex
+		queueName = (options.appName + '__wabbitzzz_rpc').replace(/-/g, '_'), // trailing _rpc important for policy regex
 		Queue = _queue({ connString }),
 		queue = queueDict[connString];
 
@@ -49,8 +49,7 @@ function response (connString){
 	if (!queue) {
 		queue = new Queue({
 			name: queueName,
-			ack: false,
-			exclusive: !options.shared,
+			prefetchCount: 200,
 			autoDelete: true,
 			durable: false,
 			bindings: [
@@ -65,6 +64,7 @@ function response (connString){
 		queue.ready
 			.timeout(80000)
 			.then(function(){
+				console.log('queue ready');
 				queue(function(msg){
 					var cb = callbacks[msg._routingKey];
 					if (!cb){
@@ -79,19 +79,16 @@ function response (connString){
 							correlationId: msg._correlationId,
 						};
 
-						if (!listenOnly){
-							const conn = connString ? connString : 'main';
-							if (err){
-								return defaultExchangeDict[conn].publish({
-									_rpcError:true,
-									_message: err.toString(),
-								}, publishOptions);
-							} else {
-								return defaultExchangeDict[conn].publish(res, publishOptions);
-							}
+						const conn = connString ? connString : 'main';
+						if (err){
+							return defaultExchangeDict[conn].publish({
+								_rpcError:true,
+								_message: err.toString(),
+							}, publishOptions);
+						} else {
+							return defaultExchangeDict[conn].publish(res, publishOptions);
 						}
 					};
-					msg._listenOnly = listenOnly;
 
 					try {
 						// this is not strictly necessary, but helps avoid bugs for the moment
@@ -109,8 +106,6 @@ function response (connString){
 			});
 	}
 
-	var listenOnly = false;
-
 	var fn = function(cb){
 		queue.addBinding({ type: 'direct', name: '_rpc_send_direct', key: methodName })
 			.catch(err => {
@@ -122,8 +117,6 @@ function response (connString){
 
 
 	};
-	fn.enable =function(){ listenOnly = false; };
-	fn.disable = function(){ listenOnly = true; };
 	fn.ready = queue.ready;
 
 	return fn;

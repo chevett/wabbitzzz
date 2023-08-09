@@ -266,6 +266,10 @@ function Queue(connString, params){
 							return chan.ack(msg);
 						}
 
+						if (/^requeue$/i.test(error)) {
+							return chan.nack(msg, false, true);
+						}
+
 						myMessage._error = _.extend({}, {message: error.message, stack: error.stack}, error);
 
 						var pushToRetryQueue = false;
