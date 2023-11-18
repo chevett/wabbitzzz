@@ -145,6 +145,12 @@ function Queue(connString, params){
 			.then(_.constant(chan));
 	}
 
+	if (useErrorQueue){
+		params.arguments = params.arguments || {};
+		params.arguments['x-dead-letter-exchange'] = '';
+		params.arguments['x-dead-letter-routing-key'] = errorQueueName;
+	}
+
 	var queuePromise = assertQueue(connString, name, bindings, params)
 		.then(function(chan){
 			chan.on('error', function(err){
@@ -303,21 +309,7 @@ function Queue(connString, params){
 									return chan.ack(msg);
 								});
 						} else if (useErrorQueue) {
-							var options = {
-								key: errorQueueName,
-								persistent: true,
-							};
-
-							return defaultExchangePublish(connString, myMessage, options)
-								.then(function(){
-									return chan.ack(msg);
-								})
-								.catch(function(publishError){
-									_log('error', 'wabbitzzz, defaultExchangePublish error', error);
-									_log('error', 'wabbitzzz, defaultExchangePublish publishError', publishError);
-
-									throw publishError;
-								});
+							return Promise.resolve(chan.nack(msg, false, false));
 						} else {
 							_log('error', 'bad ack', error);
 							return Promise.resolve(false);

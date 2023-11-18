@@ -175,8 +175,7 @@ describe('queue', function(){
 			});
 
 			errorQueue(async function(msg, ack){
-				expect(msg._error).to.be.ok;
-				expect(msg._error.message).to.be.equal(errorKey);
+				expect(msg.key).to.be.equal(message);
 				await ack();
 
 				errorQueue.destroy();
@@ -225,11 +224,11 @@ describe('queue', function(){
 			});
 
 			errorQueue(async function(msg, ack){
-				expect(msg._error).to.be.ok;
-				expect(msg._error.message).to.be.equal(errorKey);
+				expect(msg.key).to.be.equal(message);
 				await ack();
 
 				errorQueue.destroy();
+
 				done();
 			});
 
