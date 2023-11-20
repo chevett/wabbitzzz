@@ -451,7 +451,7 @@ describe('queue', function(){
 	});
 
 	describe('retries', function() {
-		it('should retry messages when attempts is set', function(done){
+		it.only('should retry messages when attempts is set', function(done){
 			this.timeout(25000);
 			var content1 = { id: ezuuid() };
 

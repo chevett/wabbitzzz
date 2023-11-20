@@ -42,6 +42,28 @@ function assertQueue(connString, queueName, exchangeNames, params){
 		});
 }
 
+				// const queueOptions = {
+				// 	arguments: {
+				// 		'x-dead-letter-exchange': '',
+				// 		'x-dead-letter-routing-key': key,
+				// 		'x-message-ttl': delay,
+				// 	},
+				// };
+				//
+				// const delayQueueName = `delay_default_${key}_${delay}`;
+				// return chan.assertQueue(delayQueueName, queueOptions)
+				// 	.then(() => {
+				// 		return new Promise((resolve, reject) => {
+				// 			return chan.sendToQueue(delayQueueName, buf, options, function(err, ok) {
+				// 				if (err) {
+				// 					return reject(err);
+				// 				}
+				//
+				// 				return resolve(ok);
+				// 			});
+				// 		});
+				// 	});
+//
 function getNoAckParam(params){
 	if (params.noAck !== undefined && params.ack !== undefined){
 		throw new Error('cannot specifiy both ack and noAck params');
@@ -151,7 +173,7 @@ function Queue(connString, params){
 		params.arguments['x-dead-letter-routing-key'] = errorQueueName;
 	}
 
-	var queuePromise = assertQueue(connString, name, bindings, params)
+	const queuePromise = assertQueue(connString, name, bindings, params)
 		.then(function(chan){
 			chan.on('error', function(err){
 				_log('error', '------------------------');
@@ -161,25 +183,28 @@ function Queue(connString, params){
 			});
 
 			return Promise.resolve(true)
-				.then(function(){
-					return chan;
-				})
-				.then(function(chan){
-					if (useErrorQueue){
-						return chan.assertQueue(errorQueueName, { durable: true })
-							.then(_.constant(chan));
+				.then(async function() {
+					if (useErrorQueue) {
+						await chan.assertQueue(errorQueueName, { durable: true });
+
+						if (attempts) {
+							const attemptArray = _.isArray(attempts) ? attempts : _.range(1, +attempts + 1).map(i => i * 60000);
+
+							console.dir(attemptArray);
+							// await Promise.resolve(attemptArray)
+							// 	.mapSeries(async attempt => {
+
+
+						}
+
+
+
+
 					}
 
-					return chan;
-				})
-				.then(function(chan){
-					return chan.prefetch(prefetchCount)
-						.then(_.constant(chan));
-				})
-				.then(function(chan) {
-					return bindQueue(chan, bindings);
-				})
-				.then(function(chan){
+					await chan.prefetch(prefetchCount);
+					await bindQueue(chan, bindings);
+
 					if (_.isFunction(params.ready)) {
 						params.ready();
 					}
