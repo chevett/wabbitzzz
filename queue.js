@@ -65,12 +65,16 @@ function _patternToMatcher(pattern) {
 	};
 }
 
+function _replaceAppName(name){
+	return (name || '').replace(/(\b|_)(APP_NAME)(\b|_)/, `$1${APP_NAME}$3`);
+}
+
 function Queue(connString, params){
 	params = _.extend({}, DEFAULTS, params);
 
-	var name = (params.name || ((params.namePrefix || 'no_name') + '.no_mirror.' + uuid())).replace(/(\b|_)(APP_NAME)(\b|_)/, `$1${APP_NAME}$3`),
+	var name = _replaceAppName((params.name || ((params.namePrefix || 'no_name') + '.no_mirror.' + uuid()))),
 		useErrorQueue = !!params.useErrorQueue || _.isObject(params.errorQueue),
-		errorQueueName = _.get(params, 'errorQueue.name', `${name}_error`),
+		errorQueueName = _replaceAppName(_.get(params, 'errorQueue.name', `${name}_error`)),
 		prefetchCount = params.prefetchCount|| 1,
 		ctag,
 		noAck = getNoAckParam(params),
