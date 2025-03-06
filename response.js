@@ -27,10 +27,7 @@ function createOptions(methodName, options){
 
 	return options;
 }
-const MainExchange = exchange();
-var defaultExchangeDict = {
-	main: new MainExchange(),
-};
+var defaultExchangeDict = {};
 
 function _createChannel(connString){
 	return getConnection(connString)
@@ -48,6 +45,16 @@ function _createChannel(connString){
 var channelDict = {};
 
 function response (connString){
+	if (!defaultExchangeDict.main) {
+		const MainExchange = exchange();
+		defaultExchangeDict = new MainExchange();
+	}
+
+	if (opt.connString && !defaultExchangeDict[opt.connString]) {
+		const AltExchange = exchange(opt);
+		defaultExchangeDict[opt.connString] = new AltExchange();
+	}
+
 	var options = createOptions.apply(null, _.toArray(arguments).slice(1));
 	const { appName = 'none', methodName } = options;
 	const queueName = `${appName}_${methodName}___rpc`.replace(/-/g, '_'); // trailing _rpc important for policy regex
@@ -150,10 +157,6 @@ function response (connString){
 }
 
 module.exports = function (opt = {}) {
-	if (opt.connString && !defaultExchangeDict[opt.connString]) {
-		const AltExchange = exchange(opt);
-		defaultExchangeDict[opt.connString] = new AltExchange();
-	}
 	return _.partial(response, opt.connString);
 };
 module.exports.createOptions = createOptions;
