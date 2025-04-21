@@ -6,7 +6,7 @@ var Promise = require('bluebird'),
 	defaultExchangePublish = require('./default-exchange-publish');
 
 const { serialize } = require('./serializer.js');
-const MAX_INT_SIZE = 2147483647;
+const MAX_INT_SIZE = 2147483647 - 1000;
 
 var EXCHANGE_DEFAULTS = {
 	type: 'fanout',
@@ -147,7 +147,7 @@ function Exchange(connString, params){
 
 		if (delay > MAX_INT_SIZE) {
 			console.error(`wabbitzzz delay_publish delay is too large. Forcing max delay: ${delay} ${exchangeName}`, publishOptions);
-			delay = MAX_INT_SIZE - 1000;
+			delay = MAX_INT_SIZE;
 		}
 
 		var queueName = 'delay_' + exchangeName  +'_by_'+publishOptions.delay+'__'+publishOptions.key;
