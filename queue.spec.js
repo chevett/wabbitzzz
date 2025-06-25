@@ -760,4 +760,96 @@ describe('queue', function(){
 			});
 		});
 	});
+	describe('error queue durability', function() {
+		it('should make error queues durable by default', function(done) {
+			const queueName = ezuuid();
+			const errorQueueName = queueName + '_error';
+			const exchangeName = ezuuid();
+			const Exchange = require('./exchange')();
+			const exchange = new Exchange({ name: exchangeName, autoDelete: true });
+			exchange.on('ready', function() {
+				new Queue({
+					name: queueName,
+					useErrorQueue: true,
+					exchangeName: exchangeName,
+					autoDelete: true,
+					exclusive: true,
+					ready: async function() {
+						try {
+							await new Promise((resolve, reject) => {
+								new Queue({
+									name: errorQueueName,
+									durable: true,
+									ready: resolve,
+								}).ready.catch(reject);
+							});
+							done();
+						} catch (err) {
+							done(new Error('Error queue should be durable by default'));
+						}
+					},
+				});
+			});
+		});
+		it('should make error queues durable if errorQueue.durable is true', function(done) {
+			const queueName = ezuuid();
+			const errorQueueName = queueName + '_error';
+			const exchangeName = ezuuid();
+			const Exchange = require('./exchange')();
+			const exchange = new Exchange({ name: exchangeName, autoDelete: true });
+			exchange.on('ready', function() {
+				new Queue({
+					name: queueName,
+					errorQueue: { name: errorQueueName, durable: true },
+					exchangeName: exchangeName,
+					autoDelete: true,
+					exclusive: true,
+					ready: async function() {
+						try {
+							await new Promise((resolve, reject) => {
+								new Queue({
+									name: errorQueueName,
+									durable: true,
+									ready: resolve,
+								}).ready.catch(reject);
+							});
+							done();
+						} catch (err) {
+							done(new Error('Error queue should be durable as explicitly set'));
+						}
+					},
+				});
+			});
+		});
+		it('should make error queues non-durable if errorQueue.durable is false', function(done) {
+			const queueName = ezuuid();
+			const errorQueueName = queueName + '_error';
+			const exchangeName = ezuuid();
+			const Exchange = require('./exchange')();
+			const exchange = new Exchange({ name: exchangeName, autoDelete: true });
+			exchange.on('ready', function() {
+				new Queue({
+					name: queueName,
+					errorQueue: { name: errorQueueName, durable: false },
+					exchangeName: exchangeName,
+					autoDelete: true,
+					exclusive: true,
+					ready: async function() {
+						try {
+							await new Promise((resolve, reject) => {
+								new Queue({
+									name: errorQueueName,
+									durable: false,
+									ready: resolve,
+								}).ready.catch(reject);
+							});
+							done();
+						} catch (err) {
+							done(new Error('Error queue should NOT be durable as explicitly set'));
+						}
+					},
+				});
+			});
+		});
+	});
 });

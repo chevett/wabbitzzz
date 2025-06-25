@@ -384,7 +384,7 @@ function Queue(connString, params){
 
 		if (useErrorQueue){
 			const errorOptions = {
-				durable: true,
+				durable: _.get(params, 'errorQueue.durable', true),
 			};
 
 			if (_.isObject(params.errorQueue)) {
@@ -395,10 +395,10 @@ function Queue(connString, params){
 				errorOptions.arguments = { ...errorOptions.arguments, 'x-queue-type': 'quorum' };
 			}
 
-			await chan.assertQueue(errorQueueName, errorOptions)
+			await chan.assertQueue(errorQueueName, errorOptions);
 		}
 
-		await chan.prefetch(prefetchCount)
+		await chan.prefetch(prefetchCount);
 		await bindQueue(chan, bindings);
 
 		if (_.isFunction(params.ready)) {
