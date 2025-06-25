@@ -2,9 +2,9 @@ name: wabbitzzz Tests
 
 on:
   push:
-    branches: [ github-action-tests ]
+    branches: [ master ]
   pull_request:
-    branches: [ github-action-tests ]
+    branches: [ master ]
 
 jobs:
   test:
