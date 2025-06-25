@@ -1,0 +1,36 @@
+name: wabbitzzz Tests
+
+on:
+  push:
+    branches: [ github-action-tests ]
+  pull_request:
+    branches: [ github-action-tests ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rabbitmq-version: [3.12, 3.13]
+    services:
+      rabbitmq:
+        image: ghcr.io/nbr23/rabbitmq-plugins:${{ matrix.rabbitmq-version }}
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 15s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      WABBITZZZ_URL: amqp://guest:guest@localhost:5672
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm run test
