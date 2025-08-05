@@ -259,6 +259,104 @@ describe('queue', function(){
 
 		});
 	});
+	it('should be able to create a quorum queue with a classic error queue', function(done){
+		this.timeout(5000);
+
+		const exchangeName = ezuuid();
+		const message = ezuuid();
+		const queueName = ezuuid();
+
+		const exchange1 = new Exchange({name: exchangeName, autoDelete: true});
+
+		exchange1.on('ready', function(){
+
+			var queue = new Queue({
+				name: queueName,
+				useErrorQueue: true,
+				errorQueue: {
+					arguments: {
+						'x-queue-type': 'classic',
+					},
+				},
+				arguments: {
+					'x-queue-type': 'quorum',
+				},
+				bindings: [
+					exchangeName,
+				],
+				ready: function(){
+					exchange1.publish({key:message});
+				},
+			});
+
+			queue(function(msg, ack){
+				ack(new Error());
+
+				const errorQueue = new Queue({
+					name: `${queueName}_error`,
+				});
+
+				errorQueue(async function(msg, ack){
+					expect(msg.key).to.be.equal(message);
+					await ack();
+					await queue.destroy();
+					await errorQueue.destroy();
+					done();
+				});
+			});
+
+		});
+	});
+	it('should be able to create a quorum queue with a classic non durable error queue', function(done){
+		this.timeout(5000);
+
+		const exchangeName = ezuuid();
+		const message = ezuuid();
+		const queueName = ezuuid();
+
+		const exchange1 = new Exchange({name: exchangeName, autoDelete: true});
+
+		exchange1.on('ready', function(){
+
+			var queue = new Queue({
+				name: queueName,
+				useErrorQueue: true,
+				errorQueue: {
+					durable: false,
+					arguments: {
+						'x-queue-type': 'classic',
+					},
+				},
+				arguments: {
+					'x-queue-type': 'quorum',
+				},
+				bindings: [
+					exchangeName,
+				],
+				ready: function(){
+					exchange1.publish({key:message});
+				},
+			});
+
+			queue(function(msg, ack){
+				ack(new Error());
+
+				const errorQueue = new Queue({
+					name: `${queueName}_error`,
+					durable: false,
+				});
+
+				errorQueue(async function(msg, ack){
+					expect(msg.key).to.be.equal(message);
+					await ack();
+					await queue.destroy();
+					await errorQueue.destroy();
+					done();
+				});
+			});
+
+		});
+	});
 	it('should be able to push errors to custom error queue', function(done){
 		this.timeout(8000);
 		const errorQueueName = ezuuid();
